@@ -1,3 +1,6 @@
+mod lexer;
+
 fn main() {
-    println!("Hello, world!");
+    let _cur_tok : lexer::Token = lexer::Token::TokDef;
+    println!("ready>")
 }
