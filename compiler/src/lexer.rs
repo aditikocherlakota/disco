@@ -29,18 +29,30 @@ impl Lexer {
 
     pub fn gettok(&mut self) -> Token {
         let mut next_char: char = ' ';
-        while(next_char == ' ' || next_char == '\n') {
-            next_char = self.lookahead();
+        while(next_char.is_whitespace()) {
+            let mut lookahead = self.lookahead();
 
-            if (next_char as u8 == 0) {
-                return Token::TokEof;
+                if (lookahead.is_none()) {
+                    println!("eof!");
+                    break;
+                }
+                
+            let mut next_char : char = lookahead.unwrap() as char;
+
+            if (next_char.to_string() == "/n") {
+                self.line_number += 1;
             }
 
             if (next_char.is_numeric() || next_char == '.') {
                 let mut number_str: String = "".to_string();
                 while (next_char.is_numeric() || next_char == '.') {
                     number_str += &next_char.to_string();
-                    next_char = self.lookahead();
+                    let temp = self.lookahead();
+                    if (temp.is_none()) {
+                        println!("eof!");
+                        return Token::TokEof;
+                    }
+                    next_char = temp.unwrap() as char;
                 }
                 if (number_str.parse::<f64>().is_ok()) {
                     print!("{}\n", number_str.parse::<f64>().unwrap());
@@ -51,9 +63,15 @@ impl Lexer {
             
             if (next_char.is_alphabetic()) {
                 let mut identifier_str : String = "".to_string();
-                while(next_char.is_alphabetic()) {
+                while(next_char.is_alphanumeric()) {
                     identifier_str += &next_char.to_string();
-                    next_char = self.lookahead();
+                    let temp = self.lookahead();
+                    if (temp.is_none()) {
+                        println!("eof!");
+                        return Token::TokEof;
+                    } else {
+                        next_char = temp.unwrap() as char;
+                    }
                 }
                 print!("{}\n", identifier_str);
             }
@@ -61,24 +79,14 @@ impl Lexer {
         return Token::TokEof;
     }
 
-    fn lookahead(&mut self) -> char {
-        let mut lookahead: Option<u8> = Some(' '  as u8);
-        lookahead = std::io::stdin()
+    fn lookahead(&mut self) -> Option<u8> {
+        let mut lookahead: Option<u8> = std::io::stdin()
             .bytes() 
             .next()
             .and_then(|result| result.ok())
             .map(|byte| byte as u8);
-            
-
-        if (lookahead == None) { panic!("Failed to read byte stream."); }
-        
-            let mut lookahead_char : char = lookahead.unwrap() as char;
     
-            if (lookahead_char.to_string() == "/n") {
-                self.line_number += 1;
-            }
-        
-            return lookahead_char;
+        return lookahead;
     }
 }
 
