@@ -7,7 +7,9 @@ pub enum Token {
     TokDef = -2,
     TokExtern = -3,
     TokIdentifier = -4,
-    TokNumber = -5
+    TokNumber = -5,
+    TokUnexpected = -6,
+    TokComment = -7,
 }
 
 pub struct Lexer {
@@ -32,10 +34,10 @@ impl Lexer {
         while(next_char.is_whitespace()) {
             let mut lookahead = self.lookahead();
 
-                if (lookahead.is_none()) {
-                    println!("eof!");
-                    break;
-                }
+            if (lookahead.is_none()) {
+                println!("eof!");
+                break;
+            }
                 
             let mut next_char : char = lookahead.unwrap() as char;
 
@@ -43,19 +45,43 @@ impl Lexer {
                 self.line_number += 1;
             }
 
+            if (next_char.to_string() == "/") {
+                let lookahead_wrapped = self.lookahead();
+                if (lookahead_wrapped.is_none()) {
+                    println!("eof!");
+                    return Token::TokEof;
+                }
+                next_char = lookahead_wrapped.unwrap() as char;
+                if (next_char.to_string() == "/") {
+                    let mut comment_str: String = "".to_string();
+                    while (next_char.to_string() != "\n" && next_char.to_string() != "\r") {
+                        comment_str += &next_char.to_string();
+                        let lookahead_wrapped = self.lookahead();
+                        if (lookahead_wrapped.is_none()) {
+                            println!("eof!");
+                            return Token::TokEof;
+                        }
+                        next_char = lookahead_wrapped.unwrap() as char;
+                    }
+                    print!("Comment parsed: {}\n", comment_str);
+                } else {
+                    print!("Undefined token");
+                }
+            }
+
             if (next_char.is_numeric() || next_char == '.') {
                 let mut number_str: String = "".to_string();
                 while (next_char.is_numeric() || next_char == '.') {
                     number_str += &next_char.to_string();
-                    let temp = self.lookahead();
-                    if (temp.is_none()) {
+                    let lookahead_wrapped = self.lookahead();
+                    if (lookahead_wrapped.is_none()) {
                         println!("eof!");
                         return Token::TokEof;
                     }
-                    next_char = temp.unwrap() as char;
+                    next_char = lookahead_wrapped.unwrap() as char;
                 }
                 if (number_str.parse::<f64>().is_ok()) {
-                    print!("{}\n", number_str.parse::<f64>().unwrap());
+                    print!("Number successfully parsed: {}\n", number_str.parse::<f64>().unwrap());
                 } else {
                     print!("Failed to parse numeric literal {}, line {}\n", number_str, self.line_number);
                 }
@@ -65,15 +91,22 @@ impl Lexer {
                 let mut identifier_str : String = "".to_string();
                 while(next_char.is_alphanumeric()) {
                     identifier_str += &next_char.to_string();
-                    let temp = self.lookahead();
-                    if (temp.is_none()) {
+                    let lookahead_wrapped = self.lookahead();
+                    if (lookahead_wrapped.is_none()) {
                         println!("eof!");
                         return Token::TokEof;
                     } else {
-                        next_char = temp.unwrap() as char;
+                        next_char = lookahead_wrapped.unwrap() as char;
                     }
                 }
-                print!("{}\n", identifier_str);
+                if (identifier_str == "var") {
+                    print!("var successfully parsed: {}\n", identifier_str);
+                }
+                else if (identifier_str == "def") {
+                    print!("def successfully parsed: {}\n", identifier_str);
+                } else {
+                    print!("Identifier successfully parsed: {}\n", identifier_str);
+                }
             }
         }
         return Token::TokEof;
@@ -88,5 +121,6 @@ impl Lexer {
     
         return lookahead;
     }
+
 }
 
